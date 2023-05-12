@@ -1,0 +1,96 @@
+- name: Install elastic search
+  hosts: redhat
+  vars:
+    cluster_name: 'my_cluster'
+    node_name: 'my_node'
+    network_host: localhost
+  become: yes
+
+  tasks:
+    - name: Install required packages
+      package:
+        name:
+          - 'wget'
+          - 'unzip'
+        state: present
+    - name: Install Java
+      yum:
+        name: java-1.8.0-openjdk
+        state: present
+
+    - name: Add Elastic GPG key
+      rpm_key:
+        key: https://artifacts.elastic.co/GPG-KEY-elasticsearch
+        state: present
+
+    - name: Add Elastic YUM repository
+      yum_repository:
+        name: elasticsearch-8.x
+        description: Elasticsearch repository for 8.x packages
+        baseurl: https://artifacts.elastic.co/packages/8.x/yum
+        gpgkey: https://artifacts.elastic.co/GPG-KEY-elasticsearch
+        enabled: yes
+        gpgcheck: yes
+
+    - name: Install Elasticsearch
+      package:
+        name: elasticsearch
+        state: present
+
+    - name: Configure Elasticsearch
+      lineinfile:
+        path: /etc/elasticsearch/elasticsearch.yml
+        regexp: '{{ item.regexp }}'
+        line: '{{ item.line }}'
+      with_items:
+        - { regexp: '^#node.name:', line: 'node.name: {{ node_name }}' }
+        - { regexp: '^#cluster.name:', line: 'cluster.name: {{ cluster_name }}' }
+        - { regexp: '^#network.host:', line: 'network.host: {{ network_host}}' }
+
+    - name: Restart Elasticsearch service
+      systemd:
+        name: elasticsearch
+        state: restarted
+
+    - name: Install Kibana
+      package:
+        name: kibana
+        state: present
+
+    - name: Enable Kibana service
+      systemd:
+        name: kibana
+        enabled: yes
+        state: started
+
+    - name: Configure Kibana
+      lineinfile:
+        path: "/etc/kibana/config/kibana.yml"
+        regexp: "{{ item.regexp }}"
+        line: "{{ item.line }}"
+      with_items:
+        - { regexp: "^#server.port:", line: "server.port: 5601" }
+        - { regexp: "^#server.host:", line: ": \"0.0.0.0\"" }
+        - { regexp: "^#:", line: "elasticsearch.hosts: [\"http://{{network_host}}:9200\"]" }
+
+    - name: Restart Kibana service
+      systemd:
+        name: kibana
+        state: restarted
+
+    - name: Install Logstash
+      package:
+        name: logstash
+        state: present
+
+    - name: Enable Logstash service
+      systemd:
+        name: logstash
+        enabled: yes
+        state: started
+
+    - name: Restart Logstash service
+      systemd:
+        name: logstash
+        state: restarted
+

@@ -1,0 +1,83 @@
+---
+- name: Install elastic search
+  hosts: elk
+  vars:
+     cluster_name: 'my_cluster'
+     node_name: 'my_node'
+     network_host: localhost
+  become: true
+
+  tasks:
+    - name: Install required packages
+      apt:
+        name: ['apt-transport-https', 'software-properties-common']
+        state: present
+    - name: update cache 
+      apt:
+        update_cache: yes 
+    - name: Install Java
+      apt:
+        name: openjdk-8-jdk
+        state: present
+    - name: Add Elastic GPG key
+      apt_key:
+        url: https://artifacts.elastic.co/GPG-KEY-elasticsearch
+        state: present
+
+    - name: Add Elastic APT repository
+      apt_repository:
+        repo: deb https://artifacts.elastic.co/packages/8.x/apt stable main
+        state: present
+
+    - name: Install Elasticsearch
+      apt:
+        name: elasticsearch
+        state: present
+
+    - name: Configure Elasticsearch
+      lineinfile:
+        path: /etc/elasticsearch/elasticsearch.yml
+        regexp: '{{ item.regexp }}'
+        line: '{{ item.line }}'
+      with_items:
+        - { regexp: '^#node.name:', line: 'node.name: {{ node_name }}' }
+        - { regexp: '^#cluster.name:', line: 'cluster.name: {{ cluster_name }}' }
+        - { regexp: '^#network.host:', line: 'network.host: {{ network_host}}' }
+
+    - name: Restart elasticsearch  service
+      systemd:
+         name: elasticsearch
+         state: restarted
+
+    - name: install kibana 
+      apt: 
+         name: kibana
+         state: present
+
+    - name: enable kibana service
+      systemd: 
+         name: kibana
+         enabled: yes 
+         state: started
+  
+    - name: restart kibana service
+      systemd: 
+         name: kibana
+         state: restarted
+
+    - name: install Logstash 
+      apt: 
+         name: logstash
+         state: present
+    - name: enable Logstash service
+      systemd: 
+         name: logstash
+         enabled: yes 
+         state: started
+        
+    - name: restart Logstash service
+      systemd: 
+         name: logstash
+         state: restarted
+
+

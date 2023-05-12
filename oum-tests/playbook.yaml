@@ -1,0 +1,6 @@
+
+- name: install grafana
+  hosts: grafanaadmin
+  become: true
+  roles:
+    - grafana-apt

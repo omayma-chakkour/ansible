@@ -1,0 +1,8 @@
+ansible_user: grafanaadmin
+ansible_password: Password1234!
+ansible_host: 10.0.2.5
+grafana_version: 9.5.1
+grafana_package: grafana-9.5.1-1.x86_64.rpm
+grafana_package_url: https://dl.grafana.com/oss/release/grafana-9.5.1-1.x86_64.rpm
+grafana_gpg_key_url: https://grafanarel.s3.amazonaws.com/RPM-GPG-KEY-grafana
+

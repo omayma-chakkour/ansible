@@ -1,0 +1,22 @@
+- name: Uninstall Grafana and remove related files
+  become: yes
+  hosts: grafana
+  tasks:
+  - name: Remove Grafana package
+    apt:
+      name:
+        - grafana
+        - apt-transport-https
+        - software-properties-common
+      state: absent
+
+  - name: Remove Grafana installation directory
+    file:
+      path: /opt/grafana
+      state: absent
+
+  - name: Remove Grafana data directory
+    file:
+      path: /usr/share/grafana
+      state: absent
+

@@ -1,0 +1,67 @@
+---
+# tasks file for grafana-apt
+
+  - name: Update package cache and upgrade packages
+    apt:
+      update_cache: yes
+      upgrade: yes
+
+  - name: Install required packages
+    apt:
+      name:
+        - apt-transport-https
+        - software-properties-common
+      state: present
+
+  - name: Add Grafana repository key
+    apt_key:
+      url: https://packages.grafana.com/gpg.key
+      state: present
+
+  - name: Add Grafana repository
+    apt_repository:
+      repo: deb https://packages.grafana.com/oss/deb stable main
+      state: present
+
+  - name: Install Grafana
+    apt:
+      name: grafana
+      state: present
+
+  - name: Move Grafana installation directory
+    command: mv /usr/share/grafana /opt/
+    args:
+      creates: /opt/grafana
+
+  - name: Update Grafana data directory in configuration
+    lineinfile:
+      path: /etc/grafana/grafana.ini
+      regexp: 'data = /usr/share/grafana/data'
+      line: 'data = /opt/grafana/data'
+
+  - name: Start and enable Grafana service
+    systemd:
+      name: grafana-server
+      enabled: yes
+      state: started
+
+  - name: Open port 3000 in firewall
+    ufw:
+      rule: allow
+      port: 3000
+      proto: tcp
+
+  - name: Configure Grafana
+    lineinfile:
+      path: /etc/grafana/grafana.ini
+      regexp: '{{ item.regexp }}'
+      line: '{{ item.line }}'
+    loop:
+    - { regexp: '^http_port = .*', line: 'http_port = 3000' }
+    - { regexp: '^;domain = .*', line: 'domain = {{ ansible_fqdn }}' }
+
+  - name: Restart Grafana service
+    systemd:
+      name: grafana-server
+      state: restarted
+
